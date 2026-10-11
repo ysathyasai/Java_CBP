@@ -39,7 +39,6 @@ import yieldgrid.service.OrderService;
 
 public class CropBrowsePanel extends JPanel {
 
-    private final Customer customer;
     private final CropService cropService;
     private final OrderService orderService;
     private final Runnable cartUpdateCallback; // Callback to notify dashboard when cart changes
@@ -55,7 +54,6 @@ public class CropBrowsePanel extends JPanel {
     private ArrayList<Crop> filteredCrops;
 
     public CropBrowsePanel(Customer customer, Runnable cartUpdateCallback) {
-        this.customer = customer;
         this.cartUpdateCallback = cartUpdateCallback;
         this.cropService = new CropService();
         this.orderService = new OrderService();
@@ -87,20 +85,18 @@ public class CropBrowsePanel extends JPanel {
         txtSearch.setFont(UITheme.FONT_REGULAR);
         searchPanel.add(txtSearch);
 
-        JButton btnClearSearch = new JButton("Clear");
-        btnClearSearch.setFont(UITheme.FONT_REGULAR);
+        JButton btnClearSearch = UITheme.createSecondaryButton("Clear");
         searchPanel.add(btnClearSearch);
 
         topBar.add(searchPanel, BorderLayout.WEST);
 
-        btnRefresh = new JButton("Refresh Marketplace");
-        btnRefresh.setFont(UITheme.FONT_REGULAR);
+        btnRefresh = UITheme.createSecondaryButton("Refresh Marketplace");
         topBar.add(btnRefresh, BorderLayout.EAST);
 
         add(topBar, BorderLayout.NORTH);
 
         // CENTER: JTable of Available Crops
-        String[] columns = {"ID", "Crop", "Farmer / Farm", "Description", "Stock Available", "Price (Rs./unit)"};
+        String[] columns = { "ID", "Crop", "Farmer / Farm", "Description", "Stock Available", "Price (Rs./unit)" };
         tableModel = new DefaultTableModel(columns, 0) {
             @Override
             public boolean isCellEditable(int row, int col) {
@@ -178,12 +174,14 @@ public class CropBrowsePanel extends JPanel {
             allAvailableCrops = cropService.getAllAvailableCrops();
             applySearchFilter();
         } catch (SQLException e) {
-            JOptionPane.showMessageDialog(this, "Failed to load crops: " + e.getMessage(), "Database Error", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Failed to load crops: " + e.getMessage(), "Database Error",
+                    JOptionPane.ERROR_MESSAGE);
         }
     }
 
     // STRING HANDLING & CONDITIONAL FILTERING:
-    // Filters the collection of crops using String manipulation (toLowerCase & contains)
+    // Filters the collection of crops using String manipulation (toLowerCase &
+    // contains)
     private void applySearchFilter() {
         String query = txtSearch.getText().trim().toLowerCase();
         filteredCrops.clear();
@@ -198,12 +196,12 @@ public class CropBrowsePanel extends JPanel {
             if (query.isEmpty() || matchesName || matchesDesc || matchesFarmer) {
                 filteredCrops.add(crop);
                 Object[] row = {
-                    crop.getCropId(),
-                    crop.getCropName(),
-                    crop.getFarmerName(),
-                    crop.getDescription(),
-                    crop.getQuantity(),
-                    String.format("%.2f", crop.getPrice())
+                        crop.getCropId(),
+                        crop.getCropName(),
+                        crop.getFarmerName(),
+                        crop.getDescription(),
+                        crop.getQuantity(),
+                        String.format("%.2f", crop.getPrice())
                 };
                 tableModel.addRow(row);
             }
@@ -214,7 +212,8 @@ public class CropBrowsePanel extends JPanel {
     private void handleAddToCart() {
         int selectedRow = catalogTable.getSelectedRow();
         if (selectedRow == -1 || selectedRow >= filteredCrops.size()) {
-            JOptionPane.showMessageDialog(this, "Please select a crop from the marketplace table first.", "Selection Required", JOptionPane.WARNING_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Please select a crop from the marketplace table first.",
+                    "Selection Required", JOptionPane.WARNING_MESSAGE);
             return;
         }
 

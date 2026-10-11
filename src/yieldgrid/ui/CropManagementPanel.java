@@ -161,8 +161,7 @@ public class CropManagementPanel extends JPanel {
         btnDelete = UITheme.createDangerButton("Delete");
         btnDelete.setEnabled(false);
         // Reset button
-        btnClear = new JButton("Clear");
-        btnClear.setFont(UITheme.FONT_REGULAR);
+        btnClear = UITheme.createSecondaryButton("Clear");
 
         btnPanel.add(btnAdd);
         btnPanel.add(btnUpdate);

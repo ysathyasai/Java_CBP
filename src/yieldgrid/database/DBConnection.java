@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Properties;
@@ -28,7 +29,6 @@ public class DBConnection {
     private static String username = "root";
     private static String password = "";
     private static boolean driverLoaded = false;
-    private static boolean configLoaded = false;
 
     // STATIC INITIALIZER / METHOD:
     // Loads MySQL Connector/J driver and configuration properties when class is first referenced
@@ -49,7 +49,6 @@ public class DBConnection {
                 url = props.getProperty("db.url", url);
                 username = props.getProperty("db.username", username);
                 password = props.getProperty("db.password", password);
-                configLoaded = true;
             } catch (IOException e) {
                 System.err.println("Warning: Could not read config.properties: " + e.getMessage());
             }
@@ -87,9 +86,10 @@ public class DBConnection {
                 + "user_id INT AUTO_INCREMENT PRIMARY KEY, "
                 + "name VARCHAR(100) NOT NULL, "
                 + "username VARCHAR(50) NOT NULL UNIQUE, "
-                + "password VARCHAR(100) NOT NULL, "
+                + "password VARCHAR(255) NOT NULL, "
                 + "role VARCHAR(20) NOT NULL, "
                 + "contact_info VARCHAR(150), "
+                + "is_active BOOLEAN DEFAULT TRUE, "
                 + "created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP"
                 + ");";
 
@@ -132,34 +132,183 @@ public class DBConnection {
             stmt.execute(createCropsTable);
             stmt.execute(createOrdersTable);
             stmt.execute(createOrderItemsTable);
+
+            // Safe schema migrations:
+            try {
+                stmt.execute("ALTER TABLE users MODIFY COLUMN password VARCHAR(255) NOT NULL;");
+            } catch (SQLException ignored) {
+            }
+            try {
+                stmt.execute("ALTER TABLE users ADD COLUMN is_active BOOLEAN DEFAULT TRUE;");
+            } catch (SQLException ignored) {
+            }
+
             insertSeedDataIfEmpty(conn);
         } catch (SQLException e) {
             System.err.println("Database initialization notice: " + e.getMessage());
         }
     }
 
-    // SQL / CRUD CONCEPT: Seed Data
-    // Inserts default sample farmers, customers, and crops if database is currently empty
+    // SQL / CRUD CONCEPT: Seed Data & Admin Initialization
+    // Inserts default sample farmers, customers, crops, and administrator safely using PreparedStatements
     private static void insertSeedDataIfEmpty(Connection conn) {
         try (Statement stmt = conn.createStatement()) {
-            // Check if users exist
+            // Check if users table is empty
             var rs = stmt.executeQuery("SELECT COUNT(*) AS total FROM users;");
             if (rs.next() && rs.getInt("total") == 0) {
-                // Seed Farmers & Customers
-                stmt.executeUpdate("INSERT INTO users (user_id, name, username, password, role, contact_info) VALUES "
-                        + "(1, 'Ramesh Kumar (Green Valley Farms)', 'farmer1', 'farmer123', 'FARMER', 'Guntur, AP - Ph: 9876543210'), "
-                        + "(2, 'Suresh Patel (Sunshine Organic Farm)', 'farmer2', 'farmer123', 'FARMER', 'Krishna District - Ph: 9876543211'), "
-                        + "(3, 'Anita Sharma', 'customer1', 'customer123', 'CUSTOMER', 'Flat 402, Lotus Apts, Vijayawada'), "
-                        + "(4, 'Vikram Reddy', 'customer2', 'customer123', 'CUSTOMER', 'Plot 18, Green Meadows, Guntur');");
+                // Seed Admin, Farmers & Customers with salted PBKDF2 hashed passwords
+                String adminPass = yieldgrid.util.PasswordUtil.hashPassword("admin123");
+                String farmerPass = yieldgrid.util.PasswordUtil.hashPassword("farmer123");
+                String customerPass = yieldgrid.util.PasswordUtil.hashPassword("customer123");
+
+                String insertUserSql = "INSERT INTO users (user_id, name, username, password, role, contact_info, is_active) VALUES (?, ?, ?, ?, ?, ?, ?);";
+                try (PreparedStatement psUser = conn.prepareStatement(insertUserSql)) {
+                    // 1. Admin
+                    psUser.setInt(1, 1);
+                    psUser.setString(2, "System Administrator");
+                    psUser.setString(3, "admin");
+                    psUser.setString(4, adminPass);
+                    psUser.setString(5, "ADMIN");
+                    psUser.setString(6, "YieldGrid HQ, Vijayawada - Ph: 9876543000");
+                    psUser.setBoolean(7, true);
+                    psUser.addBatch();
+
+                    // 2. Farmer 1
+                    psUser.setInt(1, 2);
+                    psUser.setString(2, "Ramesh Kumar (Green Valley Farms)");
+                    psUser.setString(3, "farmer1");
+                    psUser.setString(4, farmerPass);
+                    psUser.setString(5, "FARMER");
+                    psUser.setString(6, "Guntur, AP - Ph: 9876543210");
+                    psUser.setBoolean(7, true);
+                    psUser.addBatch();
+
+                    // 3. Farmer 2
+                    psUser.setInt(1, 3);
+                    psUser.setString(2, "Suresh Patel (Sunshine Organic Farm)");
+                    psUser.setString(3, "farmer2");
+                    psUser.setString(4, farmerPass);
+                    psUser.setString(5, "FARMER");
+                    psUser.setString(6, "Krishna District - Ph: 9876543211");
+                    psUser.setBoolean(7, true);
+                    psUser.addBatch();
+
+                    // 4. Customer 1
+                    psUser.setInt(1, 4);
+                    psUser.setString(2, "Anita Sharma");
+                    psUser.setString(3, "customer1");
+                    psUser.setString(4, customerPass);
+                    psUser.setString(5, "CUSTOMER");
+                    psUser.setString(6, "Flat 402, Lotus Apts, Vijayawada");
+                    psUser.setBoolean(7, true);
+                    psUser.addBatch();
+
+                    // 5. Customer 2
+                    psUser.setInt(1, 5);
+                    psUser.setString(2, "Vikram Reddy");
+                    psUser.setString(3, "customer2");
+                    psUser.setString(4, customerPass);
+                    psUser.setString(5, "CUSTOMER");
+                    psUser.setString(6, "Plot 18, Green Meadows, Guntur");
+                    psUser.setBoolean(7, true);
+                    psUser.addBatch();
+
+                    psUser.executeBatch();
+                }
 
                 // Seed Crops
-                stmt.executeUpdate("INSERT INTO crops (crop_id, farmer_id, crop_name, description, quantity, price, available) VALUES "
-                        + "(1, 1, 'Organic Tomato', 'Freshly harvested farm-fresh red ripe tomatoes (per kg)', 150, 35.00, TRUE), "
-                        + "(2, 1, 'Russet Potato', 'Cleaned grade-A earthy potatoes suitable for all dishes (per kg)', 200, 28.00, TRUE), "
-                        + "(3, 1, 'Red Onion', 'Crisp pungent red onions grown with minimal pesticides (per kg)', 120, 42.00, TRUE), "
-                        + "(4, 2, 'Fresh Carrot', 'Sweet and crunchy orange carrots rich in vitamin A (per kg)', 80, 50.00, TRUE), "
-                        + "(5, 2, 'Organic Spinach', 'Tender green spinach leaves harvested every morning (per bunch)', 90, 20.00, TRUE), "
-                        + "(6, 2, 'Guntur Green Chilli', 'Spicy aromatic green chillies freshly plucked (per kg)', 60, 65.00, TRUE);");
+                String insertCropSql = "INSERT INTO crops (crop_id, farmer_id, crop_name, description, quantity, price, available) VALUES (?, ?, ?, ?, ?, ?, ?);";
+                try (PreparedStatement psCrop = conn.prepareStatement(insertCropSql)) {
+                    psCrop.setInt(1, 1);
+                    psCrop.setInt(2, 2);
+                    psCrop.setString(3, "Organic Tomato");
+                    psCrop.setString(4, "Freshly harvested farm-fresh red ripe tomatoes (per kg)");
+                    psCrop.setInt(5, 150);
+                    psCrop.setDouble(6, 35.00);
+                    psCrop.setBoolean(7, true);
+                    psCrop.addBatch();
+
+                    psCrop.setInt(1, 2);
+                    psCrop.setInt(2, 2);
+                    psCrop.setString(3, "Russet Potato");
+                    psCrop.setString(4, "Cleaned grade-A earthy potatoes suitable for all dishes (per kg)");
+                    psCrop.setInt(5, 200);
+                    psCrop.setDouble(6, 28.00);
+                    psCrop.setBoolean(7, true);
+                    psCrop.addBatch();
+
+                    psCrop.setInt(1, 3);
+                    psCrop.setInt(2, 2);
+                    psCrop.setString(3, "Red Onion");
+                    psCrop.setString(4, "Crisp pungent red onions grown with minimal pesticides (per kg)");
+                    psCrop.setInt(5, 120);
+                    psCrop.setDouble(6, 42.00);
+                    psCrop.setBoolean(7, true);
+                    psCrop.addBatch();
+
+                    psCrop.setInt(1, 4);
+                    psCrop.setInt(2, 3);
+                    psCrop.setString(3, "Fresh Carrot");
+                    psCrop.setString(4, "Sweet and crunchy orange carrots rich in vitamin A (per kg)");
+                    psCrop.setInt(5, 80);
+                    psCrop.setDouble(6, 50.00);
+                    psCrop.setBoolean(7, true);
+                    psCrop.addBatch();
+
+                    psCrop.setInt(1, 5);
+                    psCrop.setInt(2, 3);
+                    psCrop.setString(3, "Organic Spinach");
+                    psCrop.setString(4, "Tender green spinach leaves harvested every morning (per bunch)");
+                    psCrop.setInt(5, 90);
+                    psCrop.setDouble(6, 20.00);
+                    psCrop.setBoolean(7, true);
+                    psCrop.addBatch();
+
+                    psCrop.setInt(1, 6);
+                    psCrop.setInt(2, 3);
+                    psCrop.setString(3, "Guntur Green Chilli");
+                    psCrop.setString(4, "Spicy aromatic green chillies freshly plucked (per kg)");
+                    psCrop.setInt(5, 60);
+                    psCrop.setDouble(6, 65.00);
+                    psCrop.setBoolean(7, true);
+                    psCrop.addBatch();
+
+                    psCrop.executeBatch();
+                }
+            } else {
+                // If users already exist, ensure an administrator account is present
+                var adminRs = stmt.executeQuery("SELECT COUNT(*) AS admin_count FROM users WHERE role = 'ADMIN';");
+                if (adminRs.next() && adminRs.getInt("admin_count") == 0) {
+                    String adminPass = yieldgrid.util.PasswordUtil.hashPassword("admin123");
+                    String insAdminSql = "INSERT INTO users (name, username, password, role, contact_info, is_active) VALUES (?, ?, ?, ?, ?, ?);";
+                    try (PreparedStatement psAdmin = conn.prepareStatement(insAdminSql)) {
+                        psAdmin.setString(1, "System Administrator");
+                        psAdmin.setString(2, "admin");
+                        psAdmin.setString(3, adminPass);
+                        psAdmin.setString(4, "ADMIN");
+                        psAdmin.setString(5, "YieldGrid HQ, Vijayawada - Ph: 9876543000");
+                        psAdmin.setBoolean(6, true);
+                        psAdmin.executeUpdate();
+                    }
+                }
+
+                // Smooth migration for existing unhashed passwords: hash any legacy plaintext passwords
+                var existingUsers = stmt.executeQuery("SELECT user_id, password FROM users;");
+                java.util.Map<Integer, String> toUpdate = new java.util.HashMap<>();
+                while (existingUsers.next()) {
+                    int uid = existingUsers.getInt("user_id");
+                    String pass = existingUsers.getString("password");
+                    if (pass != null && !yieldgrid.util.PasswordUtil.isHashed(pass)) {
+                        toUpdate.put(uid, yieldgrid.util.PasswordUtil.hashPassword(pass));
+                    }
+                }
+                for (var entry : toUpdate.entrySet()) {
+                    try (var ps = conn.prepareStatement("UPDATE users SET password = ? WHERE user_id = ?;")) {
+                        ps.setString(1, entry.getValue());
+                        ps.setInt(2, entry.getKey());
+                        ps.executeUpdate();
+                    }
+                }
             }
         } catch (SQLException e) {
             System.err.println("Seed data insertion notice: " + e.getMessage());

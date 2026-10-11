@@ -98,4 +98,28 @@ public class CropService {
 
         return cropDAO.deleteCrop(cropId, requestingFarmerId);
     }
+
+    // JAVA COLLECTIONS CONCEPT: Set (HashSet) - UNIT-IV
+    // Extracts unique produce names across all currently available crops
+    public java.util.Set<String> getDistinctCropNames() throws SQLException {
+        ArrayList<Crop> crops = getAllAvailableCrops();
+        java.util.Set<String> distinctNames = new java.util.HashSet<>();
+        for (Crop c : crops) {
+            distinctNames.add(c.getCropName());
+        }
+        return distinctNames;
+    }
+
+    // JAVA COLLECTIONS CONCEPT: Set (TreeSet) - UNIT-IV
+    // Returns lexicographically sorted set of distinct farmer producer names
+    public java.util.Set<String> getSortedFarmerNames() throws SQLException {
+        ArrayList<Crop> crops = getAllAvailableCrops();
+        java.util.Set<String> sortedFarmers = new java.util.TreeSet<>();
+        for (Crop c : crops) {
+            if (c.getFarmerName() != null && !c.getFarmerName().isEmpty()) {
+                sortedFarmers.add(c.getFarmerName());
+            }
+        }
+        return sortedFarmers;
+    }
 }

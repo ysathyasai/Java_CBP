@@ -22,7 +22,6 @@ import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 import javax.swing.table.DefaultTableModel;
 import yieldgrid.exception.ValidationException;
-import yieldgrid.model.Customer;
 import yieldgrid.model.Farmer;
 import yieldgrid.model.Order;
 import yieldgrid.model.OrderItem;
@@ -78,22 +77,42 @@ public class OrdersPanel extends JPanel {
         JPanel topPanel = new JPanel(new BorderLayout());
         topPanel.setBackground(UITheme.COLOR_BG);
 
-        String title = isFarmer ? "Incoming Customer Orders & Status Management" : "My Order History & Real-Time Tracking";
+        String title = isFarmer ? "Incoming Customer Orders & Status Management"
+                : "My Order History & Real-Time Tracking";
         JLabel lblTitle = new JLabel(title);
         lblTitle.setFont(UITheme.FONT_SUBTITLE);
         lblTitle.setForeground(UITheme.COLOR_PRIMARY_DARK);
         topPanel.add(lblTitle, BorderLayout.WEST);
 
-        btnRefresh = new JButton("Refresh Orders");
-        btnRefresh.setFont(UITheme.FONT_REGULAR);
-        topPanel.add(btnRefresh, BorderLayout.EAST);
+        JPanel btnBar = new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.RIGHT, 8, 0));
+        btnBar.setOpaque(false);
+
+        JButton btnExport = UITheme.createAccentButton("Export Orders (CSV)");
+        btnExport.addActionListener(e -> {
+            try {
+                javax.swing.JFileChooser chooser = new javax.swing.JFileChooser();
+                chooser.setSelectedFile(new java.io.File("yieldgrid_orders.csv"));
+                if (chooser.showSaveDialog(OrdersPanel.this) == javax.swing.JFileChooser.APPROVE_OPTION) {
+                    yieldgrid.util.DataExporter.exportOrdersToCSV(loadedOrders, chooser.getSelectedFile());
+                    javax.swing.JOptionPane.showMessageDialog(OrdersPanel.this, "Orders exported successfully to CSV!", "Export Complete", javax.swing.JOptionPane.INFORMATION_MESSAGE);
+                }
+            } catch (Exception ex) {
+                javax.swing.JOptionPane.showMessageDialog(OrdersPanel.this, "Export failed: " + ex.getMessage(), "Export Error", javax.swing.JOptionPane.ERROR_MESSAGE);
+            }
+        });
+        btnBar.add(btnExport);
+
+        btnRefresh = UITheme.createSecondaryButton("Refresh Orders");
+        btnBar.add(btnRefresh);
+
+        topPanel.add(btnBar, BorderLayout.EAST);
 
         add(topPanel, BorderLayout.NORTH);
 
         // SPLIT PANE: Top Table (Orders) and Bottom Table (Order Line Items)
         // 1. Orders Table:
         String otherPartyCol = isFarmer ? "Customer" : "Farmer / Producer";
-        String[] orderCols = {"Order ID", otherPartyCol, "Order Date", "Total (Rs.)", "Order Status"};
+        String[] orderCols = { "Order ID", otherPartyCol, "Order Date", "Total (Rs.)", "Order Status" };
         ordersModel = new DefaultTableModel(orderCols, 0) {
             @Override
             public boolean isCellEditable(int row, int col) {
@@ -108,7 +127,7 @@ public class OrdersPanel extends JPanel {
         orderScroll.setBorder(BorderFactory.createLineBorder(UITheme.COLOR_BORDER, 1));
 
         // 2. Order Items Table (Composition Detail View):
-        String[] itemCols = {"Line Item ID", "Crop Name", "Quantity", "Unit Price (Rs.)", "Subtotal (Rs.)"};
+        String[] itemCols = { "Line Item ID", "Crop Name", "Quantity", "Unit Price (Rs.)", "Subtotal (Rs.)" };
         itemsModel = new DefaultTableModel(itemCols, 0) {
             @Override
             public boolean isCellEditable(int row, int col) {
@@ -156,7 +175,8 @@ public class OrdersPanel extends JPanel {
             btnUpdateStatus.setEnabled(false);
             farmerActionCard.add(btnUpdateStatus);
 
-            JLabel lblHint = new JLabel("<html><font color='#666666'>* Marking COMPLETED credits your revenue.</font></html>");
+            JLabel lblHint = new JLabel(
+                    "<html><font color='#666666'>* Marking COMPLETED credits your revenue.</font></html>");
             farmerActionCard.add(lblHint);
 
             add(farmerActionCard, BorderLayout.SOUTH);
@@ -209,11 +229,11 @@ public class OrdersPanel extends JPanel {
                 String dateStr = order.getOrderDate() != null ? dateFormat.format(order.getOrderDate()) : "N/A";
 
                 Object[] row = {
-                    order.getOrderId(),
-                    otherParty,
-                    dateStr,
-                    String.format("%.2f", order.getTotalAmount()),
-                    order.getStatus().name() // ENUM to String
+                        order.getOrderId(),
+                        otherParty,
+                        dateStr,
+                        String.format("%.2f", order.getTotalAmount()),
+                        order.getStatus().name() // ENUM to String
                 };
                 ordersModel.addRow(row);
             }
@@ -224,11 +244,13 @@ public class OrdersPanel extends JPanel {
             selectedOrder = null;
 
         } catch (SQLException e) {
-            JOptionPane.showMessageDialog(this, "Failed to load orders: " + e.getMessage(), "Database Error", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Failed to load orders: " + e.getMessage(), "Database Error",
+                    JOptionPane.ERROR_MESSAGE);
         }
     }
 
-    // OBJECT COMPOSITION: Displaying individual OrderItem objects belonging to the selected Order
+    // OBJECT COMPOSITION: Displaying individual OrderItem objects belonging to the
+    // selected Order
     private void displaySelectedOrderItems() {
         int row = ordersTable.getSelectedRow();
         if (row >= 0 && row < loadedOrders.size()) {
@@ -238,11 +260,11 @@ public class OrdersPanel extends JPanel {
             // JAVA COLLECTIONS: ArrayList<OrderItem>
             for (OrderItem item : selectedOrder.getItems()) {
                 Object[] itemRow = {
-                    item.getOrderItemId(),
-                    item.getCropName(),
-                    item.getQuantity(),
-                    String.format("%.2f", item.getUnitPrice()),
-                    String.format("%.2f", item.getSubtotal())
+                        item.getOrderItemId(),
+                        item.getCropName(),
+                        item.getQuantity(),
+                        String.format("%.2f", item.getUnitPrice()),
+                        String.format("%.2f", item.getSubtotal())
                 };
                 itemsModel.addRow(itemRow);
             }
@@ -266,7 +288,8 @@ public class OrdersPanel extends JPanel {
         }
 
         try {
-            boolean updated = orderService.updateOrderStatus(selectedOrder.getOrderId(), newStatus, currentUser.getUserId());
+            boolean updated = orderService.updateOrderStatus(selectedOrder.getOrderId(), newStatus,
+                    currentUser.getUserId());
             if (updated) {
                 JOptionPane.showMessageDialog(this,
                         "Order #" + selectedOrder.getOrderId() + " status updated to: " + newStatus,
@@ -274,7 +297,8 @@ public class OrdersPanel extends JPanel {
                         JOptionPane.INFORMATION_MESSAGE);
                 loadOrders();
             } else {
-                JOptionPane.showMessageDialog(this, "Failed to update order status.", "Update Failed", JOptionPane.WARNING_MESSAGE);
+                JOptionPane.showMessageDialog(this, "Failed to update order status.", "Update Failed",
+                        JOptionPane.WARNING_MESSAGE);
             }
         } catch (ValidationException | SQLException ex) {
             JOptionPane.showMessageDialog(this, ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);

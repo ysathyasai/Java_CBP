@@ -18,3 +18,14 @@ out/
 .project
 .classpath
 .settings/
+
+# Generated CSV Exports and Logs
+*.csv
+*.log
+
+# Disposable local artifacts and thumbnails
+.thumbnails/
+
+# Python cache files
+__pycache__/
+*.pyc

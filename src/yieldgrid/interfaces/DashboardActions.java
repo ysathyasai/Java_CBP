@@ -16,6 +16,11 @@ package yieldgrid.interfaces;
 // must support without forcing the implementation into one specific class hierarchy.
 public interface DashboardActions {
 
+    // INTERFACE CONCEPT: Variables in Interface
+    // All variables declared inside an interface are implicitly 'public static final' constants
+    String APPLICATION_NAME = "YieldGrid";
+    String SYSTEM_VERSION = "2.0.0";
+
     // Abstraction: Specifies common behavior contract
     void refreshData();
 

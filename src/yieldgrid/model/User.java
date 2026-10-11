@@ -24,26 +24,34 @@ public abstract class User {
     private String password;
     private String role;
     private String contactInfo;
+    private boolean active = true;
 
     // OOP CONCEPT: Constructor
     // Parameterized constructor to initialize common state when creating user instances
-    public User(int userId, String name, String username, String password, String role, String contactInfo) {
+    public User(int userId, String name, String username, String password, String role, String contactInfo, boolean active) {
         this.userId = userId;
         this.name = name;
         this.username = username;
         this.password = password;
         this.role = role;
         this.contactInfo = contactInfo;
+        this.active = active;
+    }
+
+    // OOP CONCEPT: Constructor Overloading
+    // Overloaded constructor with active defaulting to true
+    public User(int userId, String name, String username, String password, String role, String contactInfo) {
+        this(userId, name, username, password, role, contactInfo, true);
     }
 
     // OOP CONCEPT: Constructor Overloading
     // Overloaded constructor for new registrations where database auto-generates the userId
     public User(String name, String username, String password, String role, String contactInfo) {
-        this(0, name, username, password, role, contactInfo);
+        this(0, name, username, password, role, contactInfo, true);
     }
 
     // OOP CONCEPT: Polymorphism / Abstract Method
-    // Subclasses (Farmer, Customer) MUST provide their own implementation of role description
+    // Subclasses (Farmer, Customer, AdminUser) MUST provide their own implementation of role description
     public abstract String getRoleDescription();
 
     // OOP CONCEPT: Polymorphism / Abstract Method
@@ -99,10 +107,35 @@ public abstract class User {
         this.contactInfo = contactInfo;
     }
 
-    // STRING HANDLING:
-    // Standard toString() method returning a formatted summary of user profile
+    public boolean isActive() {
+        return active;
+    }
+
+    public void setActive(boolean active) {
+        this.active = active;
+    }
+
+    // OBJECT CLASS: Overriding equals() to compare users by their unique userId and username
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) return true;
+        if (obj == null || getClass() != obj.getClass()) return false;
+        User other = (User) obj;
+        return userId == other.userId && (username != null ? username.equals(other.username) : other.username == null);
+    }
+
+    // OBJECT CLASS: Overriding hashCode() consistent with equals()
+    @Override
+    public int hashCode() {
+        int result = Integer.hashCode(userId);
+        result = 31 * result + (username != null ? username.hashCode() : 0);
+        return result;
+    }
+
+    // STRING HANDLING & OBJECT CLASS:
+    // Overridden toString() method returning a formatted summary of user profile
     @Override
     public String toString() {
-        return "User [ID=" + userId + ", Name=" + name + ", Username=" + username + ", Role=" + role + "]";
+        return "User [ID=" + userId + ", Name=" + name + ", Username=" + username + ", Role=" + role + ", Active=" + active + "]";
     }
 }

@@ -15,8 +15,12 @@ public class Customer extends User {
 
     // OOP CONCEPT: Constructor & super Keyword
     // Passes common credentials and role to the User superclass constructor
+    public Customer(int userId, String name, String username, String password, String contactInfo, boolean active) {
+        super(userId, name, username, password, "CUSTOMER", contactInfo, active);
+    }
+
     public Customer(int userId, String name, String username, String password, String contactInfo) {
-        super(userId, name, username, password, "CUSTOMER", contactInfo);
+        this(userId, name, username, password, contactInfo, true);
     }
 
     // OOP CONCEPT: Constructor Overloading

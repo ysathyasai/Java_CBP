@@ -139,8 +139,9 @@ public class LoginFrame extends JFrame {
         // Demo credentials hint for academic presentation
         gbc.gridy = 5;
         JLabel lblDemo = new JLabel("<html><center><font color='#777777' size='2'>"
-                + "Demo Farmer: <b>farmer1</b> / <b>farmer123</b><br>"
-                + "Demo Customer: <b>customer1</b> / <b>customer123</b>"
+                + "Admin: <b>admin</b> / <b>admin123</b><br>"
+                + "Farmer: <b>farmer1</b> / <b>farmer123</b><br>"
+                + "Customer: <b>customer1</b> / <b>customer123</b>"
                 + "</font></center></html>", SwingConstants.CENTER);
         formCard.add(lblDemo, gbc);
 
@@ -196,7 +197,10 @@ public class LoginFrame extends JFrame {
 
             // CONDITIONAL LOGIC & POLYMORPHISM:
             // The runtime type of the User instance dictates which specific dashboard to display
-            if (user instanceof Farmer) {
+            if (user instanceof yieldgrid.model.AdminUser) {
+                AdminDashboard adminDashboard = new AdminDashboard((yieldgrid.model.AdminUser) user);
+                adminDashboard.setVisible(true);
+            } else if (user instanceof Farmer) {
                 FarmerDashboard farmerDashboard = new FarmerDashboard((Farmer) user);
                 farmerDashboard.setVisible(true);
             } else if (user instanceof Customer) {

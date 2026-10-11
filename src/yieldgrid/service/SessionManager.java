@@ -52,6 +52,10 @@ public class SessionManager {
         return currentUser instanceof Customer;
     }
 
+    public static boolean isAdmin() {
+        return currentUser instanceof yieldgrid.model.AdminUser;
+    }
+
     public static Farmer getCurrentFarmer() {
         if (isFarmer()) {
             return (Farmer) currentUser;
@@ -62,6 +66,13 @@ public class SessionManager {
     public static Customer getCurrentCustomer() {
         if (isCustomer()) {
             return (Customer) currentUser;
+        }
+        return null;
+    }
+
+    public static yieldgrid.model.AdminUser getCurrentAdmin() {
+        if (isAdmin()) {
+            return (yieldgrid.model.AdminUser) currentUser;
         }
         return null;
     }

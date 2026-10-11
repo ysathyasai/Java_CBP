@@ -1,7 +1,6 @@
 package yieldgrid.ui;
 
 import java.awt.BorderLayout;
-import java.awt.FlowLayout;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.GridLayout;
@@ -71,7 +70,8 @@ public class RevenuePanel extends JPanel {
         JLabel lblRevTitle = new JLabel("TOTAL REALIZED REVENUE", SwingConstants.CENTER);
         lblRevTitle.setFont(UITheme.FONT_SUBTITLE);
         lblRevTitle.setForeground(UITheme.COLOR_TEXT_MUTED);
-        gbc.gridx = 0; gbc.gridy = 0;
+        gbc.gridx = 0;
+        gbc.gridy = 0;
         revCard.add(lblRevTitle, gbc);
 
         // ARITHMETIC METRIC DISPLAY:
@@ -96,7 +96,8 @@ public class RevenuePanel extends JPanel {
         JLabel lblCountTitle = new JLabel("FULFILLED ORDERS", SwingConstants.CENTER);
         lblCountTitle.setFont(UITheme.FONT_SUBTITLE);
         lblCountTitle.setForeground(UITheme.COLOR_TEXT_MUTED);
-        gbc.gridx = 0; gbc.gridy = 0;
+        gbc.gridx = 0;
+        gbc.gridy = 0;
         countCard.add(lblCountTitle, gbc);
 
         lblCompletedCount = new JLabel("0", SwingConstants.CENTER);
@@ -127,19 +128,43 @@ public class RevenuePanel extends JPanel {
         lblTable.setForeground(UITheme.COLOR_PRIMARY_DARK);
         tableHeaderBar.add(lblTable, BorderLayout.WEST);
 
-        JButton btnRefresh = new JButton("Refresh Ledger");
-        btnRefresh.setFont(UITheme.FONT_REGULAR);
+        JPanel btnGroup = new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.RIGHT, 8, 0));
+        btnGroup.setOpaque(false);
+
+        JButton btnExport = UITheme.createAccentButton("Export Ledger (CSV)");
+        btnExport.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                try {
+                    ArrayList<Order> completedOrders = revenueService.getCompletedOrders(farmer.getUserId());
+                    javax.swing.JFileChooser chooser = new javax.swing.JFileChooser();
+                    chooser.setSelectedFile(new java.io.File("farmer_revenue_ledger.csv"));
+                    if (chooser.showSaveDialog(RevenuePanel.this) == javax.swing.JFileChooser.APPROVE_OPTION) {
+                        yieldgrid.util.DataExporter.exportOrdersToCSV(completedOrders, chooser.getSelectedFile());
+                        JOptionPane.showMessageDialog(RevenuePanel.this, "Revenue ledger successfully exported to CSV!", "Export Complete", JOptionPane.INFORMATION_MESSAGE);
+                    }
+                } catch (Exception ex) {
+                    JOptionPane.showMessageDialog(RevenuePanel.this, "Export failed: " + ex.getMessage(), "Export Error", JOptionPane.ERROR_MESSAGE);
+                }
+            }
+        });
+        btnGroup.add(btnExport);
+
+        JButton btnRefresh = UITheme.createSecondaryButton("Refresh Ledger");
         btnRefresh.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 loadRevenueMetrics();
             }
         });
-        tableHeaderBar.add(btnRefresh, BorderLayout.EAST);
+        btnGroup.add(btnRefresh);
+
+        tableHeaderBar.add(btnGroup, BorderLayout.EAST);
 
         tableContainer.add(tableHeaderBar, BorderLayout.NORTH);
 
-        String[] columns = {"Order ID", "Customer Name", "Delivered Date", "Order Amount (Rs.)", "Fulfillment Status"};
+        String[] columns = { "Order ID", "Customer Name", "Delivered Date", "Order Amount (Rs.)",
+                "Fulfillment Status" };
         tableModel = new DefaultTableModel(columns, 0) {
             @Override
             public boolean isCellEditable(int row, int col) {
@@ -174,17 +199,18 @@ public class RevenuePanel extends JPanel {
             for (Order o : completedOrders) {
                 String dateStr = o.getOrderDate() != null ? dateFormat.format(o.getOrderDate()) : "N/A";
                 Object[] row = {
-                    o.getOrderId(),
-                    o.getCustomerName(),
-                    dateStr,
-                    String.format("%.2f", o.getTotalAmount()),
-                    o.getStatus().name()
+                        o.getOrderId(),
+                        o.getCustomerName(),
+                        dateStr,
+                        String.format("%.2f", o.getTotalAmount()),
+                        o.getStatus().name()
                 };
                 tableModel.addRow(row);
             }
 
         } catch (SQLException e) {
-            JOptionPane.showMessageDialog(this, "Failed to load revenue data: " + e.getMessage(), "Database Error", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Failed to load revenue data: " + e.getMessage(), "Database Error",
+                    JOptionPane.ERROR_MESSAGE);
         }
     }
 }

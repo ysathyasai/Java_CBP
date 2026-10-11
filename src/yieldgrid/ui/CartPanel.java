@@ -97,8 +97,7 @@ public class CartPanel extends JPanel {
         leftActions.setBackground(UITheme.COLOR_BG);
 
         btnRemove = UITheme.createDangerButton("Remove Selected");
-        btnClear = new JButton("Clear Cart");
-        btnClear.setFont(UITheme.FONT_REGULAR);
+        btnClear = UITheme.createSecondaryButton("Clear Cart");
 
         leftActions.add(btnRemove);
         leftActions.add(btnClear);

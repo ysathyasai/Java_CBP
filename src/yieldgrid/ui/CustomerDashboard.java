@@ -38,6 +38,7 @@ public class CustomerDashboard extends JFrame implements DashboardActions {
     private OrdersPanel ordersPanel;
     private ProfilePanel profilePanel;
     private JButton btnCartQuick;
+    private JLabel lblUser;
 
     public CustomerDashboard(Customer customer) {
         this.customer = customer;
@@ -67,7 +68,7 @@ public class CustomerDashboard extends JFrame implements DashboardActions {
         JPanel userSection = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
         userSection.setBackground(UITheme.COLOR_PRIMARY_DARK);
 
-        JLabel lblUser = new JLabel("Hello, " + customer.getName());
+        lblUser = new JLabel("Hello, " + customer.getName());
         lblUser.setFont(UITheme.FONT_BOLD);
         lblUser.setForeground(new Color(220, 237, 200));
         userSection.add(lblUser);
@@ -82,8 +83,7 @@ public class CustomerDashboard extends JFrame implements DashboardActions {
         });
         userSection.add(btnCartQuick);
 
-        JButton btnProfile = new JButton("Profile");
-        btnProfile.setFont(UITheme.FONT_REGULAR);
+        JButton btnProfile = UITheme.createSecondaryButton("Profile");
         btnProfile.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -128,7 +128,12 @@ public class CustomerDashboard extends JFrame implements DashboardActions {
         });
 
         ordersPanel = new OrdersPanel(customer);
-        profilePanel = new ProfilePanel(customer);
+        profilePanel = new ProfilePanel(customer, new Runnable() {
+            @Override
+            public void run() {
+                lblUser.setText("Hello, " + customer.getName());
+            }
+        });
 
         tabbedPane.addTab("Browse Produce", cropBrowsePanel);
         tabbedPane.addTab("My Shopping Cart", cartPanel);

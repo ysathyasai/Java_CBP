@@ -16,8 +16,12 @@ public class Farmer extends User {
 
     // OOP CONCEPT: Constructor & super Keyword
     // Calls the superclass constructor to initialize inherited fields
+    public Farmer(int userId, String name, String username, String password, String contactInfo, boolean active) {
+        super(userId, name, username, password, "FARMER", contactInfo, active);
+    }
+
     public Farmer(int userId, String name, String username, String password, String contactInfo) {
-        super(userId, name, username, password, "FARMER", contactInfo);
+        this(userId, name, username, password, contactInfo, true);
     }
 
     // OOP CONCEPT: Constructor Overloading

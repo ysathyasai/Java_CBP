@@ -38,6 +38,7 @@ public class FarmerDashboard extends JFrame implements DashboardActions {
     private OrdersPanel ordersPanel;
     private RevenuePanel revenuePanel;
     private ProfilePanel profilePanel;
+    private JLabel lblUser;
 
     public FarmerDashboard(Farmer farmer) {
         this.farmer = farmer;
@@ -68,13 +69,12 @@ public class FarmerDashboard extends JFrame implements DashboardActions {
         JPanel userSection = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
         userSection.setBackground(UITheme.COLOR_PRIMARY_DARK);
 
-        JLabel lblUser = new JLabel("Logged in as: " + farmer.getName());
+        lblUser = new JLabel("Logged in as: " + farmer.getName());
         lblUser.setFont(UITheme.FONT_BOLD);
         lblUser.setForeground(new Color(220, 237, 200));
         userSection.add(lblUser);
 
-        JButton btnProfile = new JButton("Profile");
-        btnProfile.setFont(UITheme.FONT_REGULAR);
+        JButton btnProfile = UITheme.createSecondaryButton("Profile");
         btnProfile.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -103,7 +103,12 @@ public class FarmerDashboard extends JFrame implements DashboardActions {
         cropManagementPanel = new CropManagementPanel(farmer);
         ordersPanel = new OrdersPanel(farmer);
         revenuePanel = new RevenuePanel(farmer);
-        profilePanel = new ProfilePanel(farmer);
+        profilePanel = new ProfilePanel(farmer, new Runnable() {
+            @Override
+            public void run() {
+                lblUser.setText("Logged in as: " + farmer.getName());
+            }
+        });
 
         tabbedPane.addTab("Manage Crops", cropManagementPanel);
         tabbedPane.addTab("Incoming Orders", ordersPanel);
